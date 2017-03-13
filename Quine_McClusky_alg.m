@@ -7,20 +7,21 @@
 %expressions    -   [OUT] a M * 10 matrix of minimized logic expressions,
 %                   each row is a vector of 10-bit binary terms
 %minterms       -   [IN] a vector of minterms in decimal form
+%irl            -   [IN] a vector of irrelavant terms in decimal form
 %Author:
 %   Yifei Yang
 %   2015011089  @   Tsinghua University
 %------------------------------------------------------------------------
 
-function expressions = Quine_McClusky_alg(mtm,urlmtm)
+function expressions = Quine_McClusky_alg(mtm,irl)
     % ----- initialization -----
-    mtm_bin     =   zeros(length(mtm)+length(urlmtm),10); % minterms in binary form
+    mtm_bin     =   zeros(length(mtm)+length(irl),10); % minterms in binary form
     % ----- transformation -----
     for i = 1:length(mtm)
         mtm_bin(i,:)    =   decimalToBinaryVector(mtm(i),10); % transform decimal minterms into binary
     end
-    for i = 1:length(urlmtm)
-        mtm_bin(length(mtm)+i,:)   =   decimalToBinaryVector(urlmtm(i),10);
+    for i = 1:length(irl)
+        mtm_bin(length(mtm)+i,:)   =   decimalToBinaryVector(irl(i),10);
     end
     % ----- get prime implicants -----
     [counts, partitions]    =   partition(mtm_bin); % devide minterms into groups by it's number of 1
@@ -58,23 +59,25 @@ function expressions = Quine_McClusky_alg(mtm,urlmtm)
     for i = 1:size(expressions,1)
         prm_imps = del(prm_imps, expressions(i,:)); % remove essential prime implicants
     end
+    if size(mtm_bin,1) > 0
     % ----- find least implicants sets -----
-    terms = size(prm_imps,1);
-    current_best = prm_imps;
-    for i = 1:2^terms - 1
-        flag = 1;
-        set = prm_imps(logical(decimalToBinaryVector(i,terms)),:);
-        for j = 1:size(mtm_bin,1)
-            if ~imply(mtm_bin(j,:),set)
-                flag = 0;
-                break;
+        terms = size(prm_imps,1);
+        current_best = prm_imps;
+        for i = 1:2^terms - 1
+            flag = 1;
+            set = prm_imps(logical(decimalToBinaryVector(i,terms)),:);
+            for j = 1:size(mtm_bin,1)
+                if ~imply(mtm_bin(j,:),set)
+                    flag = 0;
+                    break;
+                end
+            end
+            if flag && (size(set,1) < size(current_best,1))
+                current_best = set;
             end
         end
-        if flag && (size(set,1) < size(current_best,1))
-            current_best = set;
-        end
+        expressions = [expressions;current_best];
     end
-    expressions = [expressions;current_best];   
 % end function Quine_McClusky_alg
     
         
